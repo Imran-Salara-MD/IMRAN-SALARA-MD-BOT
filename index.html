@@ -26,12 +26,14 @@
         .progress-container { width: 100%; background-color: var(--border); border-radius: 10px; margin-top: 15px; display: none; }
         .progress-bar { width: 0%; height: 10px; background: linear-gradient(90deg, var(--primary), var(--secondary)); border-radius: 10px; transition: width 0.5s ease; }
         .loading-text { font-size: 12px; color: var(--muted); margin-top: 5px; text-align: center; }
+        .crown-badge { background: linear-gradient(135deg, #f5c518, #f7a600); color: #1a1a1a; font-weight: 800; font-size: 13px; padding: 6px 16px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px; }
     </style>
 </head>
 <body>
     <nav class="navbar">
-        <div class="container">
-            <a class="navbar-brand" href="#"><i class="fas fa-robot me-2"></i>OLD-STUDIO BOT</a>
+        <div class="container d-flex justify-content-between align-items-center">
+            <a class="navbar-brand" href="#"><i class="fas fa-robot me-2"></i>IMRAN-SALARA-MD-BOT</a>
+            <span class="crown-badge">👑 IMRAN SALARA</span>
         </div>
     </nav>
 
@@ -41,48 +43,36 @@
             <p class="mb-0">TOTAL BOT ACTIVE</p>
         </div>
 
-        <div id="setupSection">
+        <div id="stage1">
             <div class="post-card">
-                <h5 class="mb-3"><i class="fas fa-plus-circle me-2"></i>CREATE BOT</h5>
-                <div class="input-group mb-3">
-                    <input type="text" id="userIdInput" class="form-control" placeholder="Enter Unique Bot Name (e.g., MyBot1)">
-                    <button class="btn btn-primary" onclick="selectUser()">CREATE / SELECT</button>
+                <h5><i class="fas fa-link me-2"></i>PAIR YOUR WHATSAPP</h5>
+                <div class="mb-3">
+                    <label class="form-label">WhatsApp Number (with country code, no + or spaces)</label>
+                    <input type="tel" class="form-control" id="pairNumber" placeholder="923001234567">
                 </div>
+                <button class="btn btn-primary w-100" id="pairBtn"><i class="fas fa-unlock me-2"></i>PAIR NOW</button>
+
+                <!-- Live Loading Bar -->
+                <div id="progressContainer" class="progress-container">
+                    <div id="progressBar" class="progress-bar"></div>
+                    <div class="loading-text">⏳ Connecting to WhatsApp... Please wait.</div>
+                </div>
+
+                <div id="pairingResult" class="mt-3 text-center h4 text-warning"></div>
             </div>
         </div>
 
-        <div id="userDashboard" class="hidden">
-            <div id="stage1">
-                <div class="post-card">
-                    <h5><i class="fas fa-link me-2"></i>PAIRING CODE</h5>
-                    <div class="mb-3">
-                        <label class="form-label">WhatsApp Number (with country code)</label>
-                        <input type="tel" class="form-control" id="pairNumber" placeholder="923001234567">
-                    </div>
-                    <button class="btn btn-primary w-100" id="pairBtn">GENERATE CODE</button>
-                    
-                    <!-- Live Loading Bar -->
-                    <div id="progressContainer" class="progress-container">
-                        <div id="progressBar" class="progress-bar"></div>
-                        <div class="loading-text">⏳ Connecting to WhatsApp... Please wait.</div>
-                    </div>
-
-                    <div id="pairingResult" class="mt-3 text-center h4 text-warning"></div>
+        <div id="stage2" class="hidden">
+            <div class="post-card d-flex justify-content-between align-items-center">
+                <div>
+                    <span id="connectionStatus" class="status-badge disconnected">DISCONNECTED</span>
+                    <span class="ms-2" id="activeBotName"></span>
                 </div>
+                <button class="btn btn-danger btn-sm" id="logoutBtn">LOGOUT</button>
             </div>
-
-            <div id="stage2" class="hidden">
-                <div class="post-card d-flex justify-content-between align-items-center">
-                    <div>
-                        <span id="connectionStatus" class="status-badge disconnected">DISCONNECTED</span>
-                        <span class="ms-2" id="activeBotName"></span>
-                    </div>
-                    <button class="btn btn-danger btn-sm" id="logoutBtn">LOGOUT</button>
-                </div>
-                <div class="post-card">
-                    <h5><i class="fas fa-terminal me-2"></i>LIVE CONSOLE</h5>
-                    <div class="console-body" id="console"></div>
-                </div>
+            <div class="post-card">
+                <h5><i class="fas fa-terminal me-2"></i>LIVE CONSOLE</h5>
+                <div class="console-body" id="console"></div>
             </div>
         </div>
     </div>
@@ -91,17 +81,6 @@
     <script>
         const socket = io();
         let currentUserId = null;
-
-        function selectUser() {
-            const userId = document.getElementById('userIdInput').value.trim();
-            if (!userId) return alert('Enter a bot name');
-            currentUserId = userId;
-            socket.emit('set-user', userId);
-            document.getElementById('activeBotName').innerText = "Bot: " + userId;
-            document.getElementById('userDashboard').classList.remove('hidden');
-            document.getElementById('stage1').classList.remove('hidden');
-            document.getElementById('stage2').classList.add('hidden');
-        }
 
         socket.on('total-active', (count) => {
             document.getElementById('totalActive').innerText = count;
@@ -138,21 +117,27 @@
         let isPairing = false;
         document.getElementById('pairBtn').onclick = () => {
             if (isPairing) return;
-            const number = document.getElementById('pairNumber').value;
-            if (!number) return alert('Enter number');
-            
+            const number = document.getElementById('pairNumber').value.trim().replace(/[^0-9]/g, '');
+            if (!number) return alert('Enter your WhatsApp number');
+
+            // The number itself becomes this bot session's unique ID - no separate
+            // "bot name" step needed. Each number gets its own isolated session.
+            currentUserId = number;
+            socket.emit('set-user', currentUserId);
+            document.getElementById('activeBotName').innerText = "Bot: " + currentUserId;
+
             isPairing = true;
             document.getElementById('pairBtn').disabled = true;
-            
+
             // Show and animate loading bar
             const progressContainer = document.getElementById('progressContainer');
             const progressBar = document.getElementById('progressBar');
             const pairingResult = document.getElementById('pairingResult');
-            
+
             pairingResult.innerText = "";
             progressContainer.style.display = 'block';
             progressBar.style.width = '0%';
-            
+
             // Simulate progress while waiting for socket response
             let width = 0;
             const interval = setInterval(() => {
@@ -165,7 +150,7 @@
             }, 100);
 
             socket.emit('pair-request', { userId: currentUserId, number });
-            
+
             // Re-enable after 10 seconds or when code received
             setTimeout(() => {
                 isPairing = false;
