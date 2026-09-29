@@ -1,185 +1,416 @@
-<p align="center">
-  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:FF0000,50:00C853,100:2979FF&height=180&section=header&text=Imran%20Salara&fontSize=55&fontColor=FFFFFF&animation=twinkling&fontAlignY=40" alt="Imran Salara" />
-</p>
+# 🤖 IMRAN MD BOT
 
-# ❝𝐈𝐌𝐑𝐀𝐍-𝐒𝐀𝐋𝐀𝐑𝐀-𝐌𝐃-𝐁𝐎𝐓❞
+**IMRAN MD BOT** is a WhatsApp chatbot built **only** on the official
+**WhatsApp Business Cloud API (Meta Graph API)**. No Baileys, no Venom, no
+unofficial automation libraries — just clean, ban-safe, Meta-approved code.
 
-A multi-session WhatsApp bot built on [Baileys](https://github.com/WhiskeySockets/Baileys), with a
-small local web dashboard for pairing, optional Telegram-based pairing-code delivery, and a set of
-`.`-prefixed chat commands. Built to run primarily on **Termux (Android)**, though it also runs on
-any machine with Node.js.
+✨ **669 dot-commands** across 8 categories + **AI auto-reply fallback**
+that answers in the *same language/script* you write in
+(Urdu 🇵🇰 • Roman Urdu • English 🇬🇧).
 
-- **Owner:** ❝𝐈𝐌𝐑𝐀𝐍-𝐒𝐀𝐋𝐀𝐑𝐀-𝐌𝐃-𝐁𝐎𝐓❞
-- **WhatsApp Channel:** https://whatsapp.com/channel/0029Vb9FqCoAjPXGL9rVIb1T
+---
 
-## Requirements
+## ✨ Features
 
-- **Node.js 20 or newer** (required by the current Baileys version this project uses)
-- npm (this project uses `package-lock.json` as the source of truth - don't mix in pnpm/yarn)
+- 🤖 **669 dot-commands** — general, fun, tools, downloaders, movies, Islamic, AI
+- 🖼️ **Custom menu image** — `.menu` aap ki apni photo + naam wali image ke saath aata hai (`public/menu.jpg`)
+- 🧠 **AI auto-reply in 4 languages** — Urdu, Roman Urdu, English **aur Arabic**;
+  jis language mein message aaye, usi mein jawab
+  (OpenAI-compatible endpoint; graceful fallback when not configured)
+- 🕌 Islamic tools — Quran verses, hadith, prayer times, duas, 99 names, tasbih counter, zakat calculator
+- 🎬 Movie info via OMDB (free key) + legal watchlists
+- 🛠️ 30 utilities — calculator, QR codes, translate, Wikipedia, currency, passwords & more
+- ⚖️ **Copyright-respecting** — downloader commands return official/legal links only, never pirated content
+- 🚀 Deploy-ready for **Heroku** (`Procfile` included) and **GitHub**
 
-## Deploying to Heroku
+---
 
-This project is Heroku-ready:
+## 📢 Channel & Contact
 
-1. Create the app and push this code (Heroku detects Node via `package.json`'s `engines` field
-   and uses the `Procfile`'s `web: node index.js`).
-2. Set the required config var: `OWNER_NUMBER` (your WhatsApp number, international format, no
-   `+`). Everything else in `.env.example` / `app.json` is optional and has a sensible default.
-3. **Important - Heroku's filesystem is ephemeral.** Anything written to disk (session files
-   under `auth_info/`, `data/bot_data.json`, temp media in `tmp/`) is wiped on every dyno
-   restart/redeploy. To survive this, set the `MONGODB_URI` config var to a free
-   [MongoDB Atlas](https://www.mongodb.com/atlas) connection string - the bot will then store
-   the WhatsApp session in MongoDB (`lib/mongoAuthState.js`) instead of the local disk, so it
-   stays connected across dyno restarts without re-pairing. `data/bot_data.json` (feature
-   settings, not the WhatsApp session itself) is still local-only for now, so those in-chat
-   toggles may reset on a restart even with `MONGODB_URI` set. Leave `MONGODB_URI` blank if
-   you're running on a host with a persistent disk (a VPS, or Termux as described below), where
-   this isn't an issue.
-4. After the first deploy, set `APP_URL` to your Heroku app's URL so the built-in anti-sleep
-   ping pings the right address.
+- 📢 **Channel:** IMRAN SALARA MD Bot — `.channel` likh kar details hasil karein
+- 📲 **Owner WhatsApp:** https://wa.me/923046123264
 
-Routes exposed by the web dashboard: `/` and `/connect` (pairing UI), `/dashboard` (same UI),
-`/api/health` (liveness check), `/api/status` (aggregate, non-sensitive bot status - no keys,
-numbers, or session data are ever returned by these endpoints).
+---
 
-## Setup (Termux)
+## 📋 Requirements
+
+- Node.js **18+**
+- A **Meta Developer** account (free)
+- A WhatsApp Business test number (free from Meta) or your own WhatsApp Business number
+
+---
+
+## 🔧 Meta Developer Setup
+
+1. Go to **https://developers.facebook.com** → *Create App* → choose **Business**.
+2. In the app dashboard, click **Add Product** → **WhatsApp** → *Set up*.
+3. Under **API Setup**:
+   - Copy your **Phone number ID** → `PHONE_NUMBER_ID`
+   - Create a **temporary access token** (or a permanent system-user token) → `WHATSAPP_TOKEN`
+   - Note the **test phone number** Meta gives you.
+4. Under **Configuration** → **Webhook**:
+   - **Callback URL:** `https://<your-heroku-app>.herokuapp.com/webhook`
+   - **Verify token:** the same value you set as `VERIFY_TOKEN` in your env
+   - Click **Verify and save**, then **Subscribe** to the `messages` field.
+5. Send a WhatsApp message to the test number — the bot will reply! 🎉
+
+> 💡 For production, replace the temporary token (expires in 24h) with a
+> permanent token from a Meta **System User** with `whatsapp_business_messaging` permission.
+
+---
+
+## 🔑 Environment Variables
+
+| Variable | Required | Description |
+|---|---|---|
+| `VERIFY_TOKEN` | ✅ | Secret you invent; Meta echoes it back during webhook verification |
+| `WHATSAPP_TOKEN` | ✅ | WhatsApp Cloud API access token |
+| `PHONE_NUMBER_ID` | ✅ | Phone Number ID from the WhatsApp API Setup page |
+| `PORT` | ✅ | Server port (Heroku sets this automatically; default `3000`) |
+| `OWNER_NAME` | ⬜ | Shown in `.owner` / `.info` (default: `Imran Salara`) |
+| `APP_URL` | ⬜ | Public base URL of the app (e.g. `https://your-app.herokuapp.com`); used for the `.menu` image — leave blank for text-only menu |
+| `AI_API_URL` | ⬜ | OpenAI-compatible base URL (e.g. `https://api.openai.com/v1`) |
+| `AI_API_KEY` | ⬜ | API key for AI auto-reply (leave empty to disable AI) |
+| `AI_MODEL` | ⬜ | Model name (default: `gpt-4o-mini`) |
+| `OMDB_API_KEY` | ⬜ | Free key from omdbapi.com for `.movie` / `.series` / `.anime` / `.actor` |
+| `WEATHER_API_KEY` | ⬜ | Free key from openweathermap.org for `.weather` |
+| `NEWS_API_KEY` | ⬜ | Reserved for future news features |
+
+Copy `.env.example` → `.env` and fill in your values for local development.
+
+---
+
+## 💻 Run Locally
 
 ```bash
-pkg update && pkg upgrade
-pkg install nodejs-lts git
-
-git clone <this-repo-url>
-cd <project-folder>
-
 npm install
-cp .env.example .env
-# edit .env with a text editor (e.g. `nano .env`) if you want to change branding,
-# add a Telegram token, or add API keys for optional features
-
-npm start
+cp .env.example .env   # then edit .env with your values
+node src/index.js
 ```
 
-Then open `http://localhost:3000` in a browser on the same device (or `http://<phone-ip>:3000` from
-another device on the same network) to pair a WhatsApp number:
-
-1. Enter the WhatsApp number to link (e.g. `923000000000`).
-2. Click to request a pairing code.
-3. On the phone that owns that number: **WhatsApp → Settings → Linked Devices → Link with phone
-   number** and enter the code shown.
-4. Once linked, the session is saved under `auth_info/<number>/` and will auto-reconnect on future
-   restarts - no need to re-pair every time.
-
-### Optional: pairing codes via Telegram
-
-If you'd rather receive the pairing code through a Telegram bot instead of the web dashboard, set
-`TELEGRAM_BOT_TOKEN` in `.env` (get a token from [@BotFather](https://t.me/BotFather)). Message your
-bot `/start`, then send the WhatsApp number you want to pair. If `TELEGRAM_BOT_TOKEN` is left blank,
-this feature is simply disabled and everything else still works normally.
-
-## Configuration (`.env`)
-
-See `.env.example` for the full list. Only `TENOR_API_KEY` is required for a specific feature
-(`.emojimix`) - everything else has a sensible default or is optional.
-
-| Variable | Purpose |
-|---|---|
-| `BOT_NAME`, `OWNER_NAME`, `OWNER_NUMBER`, `OWNER_DISPLAY_NUMBER`, `WELCOME_MESSAGE` | Branding shown in `.menu` / `.owner` |
-| `LOGO_URL` | Image shown at the top of `.menu` |
-| `CHANNEL_URL` | The bot's WhatsApp Channel invite link. The channel's internal ID is **resolved automatically at runtime** from this link (via Baileys) - it is never hardcoded, so changing this is all that's needed to point `.menu`'s "View channel" badge at a different channel |
-| `TELEGRAM_BOT_TOKEN` | Optional - enables pairing-code delivery via Telegram |
-| `OPENAI_API_KEY`, `AI_BASE_URL`, `AI_MODEL` | Optional - powers the `.ai` auto-reply command |
-| `GIPHY_API_KEY` | Optional - has a working public fallback key already |
-| `TENOR_API_KEY` | Required for `.emojimix` |
-| `PORT`, `APP_URL` | Local server port and the URL used by the built-in anti-sleep self-ping |
-
-## Commands
-
-`.menu` now groups everything into sections (OWNER, GROUP MANAGEMENT, PROTECTION, DOWNLOADER,
-AI & TOOLS, ISLAMIC, AUTO REPLIES, SETTINGS) and hides owner/admin-only lines from users who
-don't have permission to run them. No existing command was renamed or removed.
-
-**User**
-`.autoreacts [on/off]` · `.antilink [on/off/kick]` · `.antidelete [on/off]` · `.ai [on/off]` ·
-`.autoreply [on/off]` (new - see below) ·
-`.vv` · `.owner` · `.dp` · `.ping` · `.translate <text> <lang>` / `.trt <text> <lang>`
-
-**Tools**
-`.apk <name>` · `.facebook <url>` / `.fb <url>` · `.tiktok <url>` · `.insta <url>` / `.ig <url>` ·
-`.song <name>` · `.video <name>` · `.joke` · `.meme` · `.emojimix <e1>+<e2>` ·
-`.character (mention/reply)` · `.gdrive <url>` · `.mf <url>`
-
-**Admin (group)**
-`.private` · `.public` · `.autoread [on/off]` · `.status [on/off/seen/like/download/system]` ·
-`.hack` · `.hidetag <text>` · `.tagall` · `.setname <name>` · `.anticall [on/off]` ·
-`.kickoffline [on/off]` · `.antistatus [on/off]` · `.groupinfo` · `.accept`
-
-Replying to a message and typing `.translate <lang>` (or `.trt <lang>`) translates the quoted
-message; typing `.translate <text> <lang>` translates arbitrary text directly.
-
-### New: `.autoreply` (lightweight greetings)
-
-`.autoreply on` / `.autoreply off` (owner-only, off by default so existing behavior is
-unchanged until you opt in). When on, the bot replies to ~20 common greetings sent as a
-*complete* message (not a substring of a longer sentence) - Salam, Assalamualaikum, Hi, Hello,
-Hey, Good Morning/Night/Afternoon/Evening, Kya haal hai / Kese ho, Thanks/Thank you/Shukriya,
-Love, Shared, MashaAllah, SubhanAllah, Alhamdulillah, InshaAllah, Bhai, Help - matching is
-case-insensitive and setting is isolated per WhatsApp session, same as every other toggle.
-
-### Note on Status features (`.status download`)
-
-`.status download on` forwards status updates from your contacts to your own WhatsApp DM. This
-only processes status updates your own WhatsApp account is already permitted to see under
-WhatsApp's normal status-privacy rules (i.e. contacts who have you in their status audience) -
-it does not bypass view-once protection, does not scrape private/hidden statuses, and cannot see
-anything your account couldn't already see in the WhatsApp app. You are responsible for
-complying with WhatsApp's Terms of Service and any applicable law regarding saving or
-redistributing other people's content.
-
-## Notes on WhatsApp Channel integration
-
-`.menu` attaches a "View channel" context to the message when possible. This uses Baileys'
-`newsletterMetadata('invite', code)` to resolve the real channel JID from the `CHANNEL_URL` invite
-link at runtime - the JID is never guessed or hardcoded. If the installed Baileys version doesn't
-support this, or the lookup fails (network issue, invalid link, etc.), the menu is still sent
-normally without the channel badge - it will never crash the bot.
-
-Note: this only attaches the "forwarded from channel" visual context to messages. It is **not** the
-same as automatically making a user follow the channel - WhatsApp doesn't support forcing a user to
-follow a channel, and this project doesn't claim to.
-
-## Running with PM2 (optional)
-
-PM2 is optional - Termux/`npm start` is the primary way to run this bot. If you do want PM2:
+For webhook testing on your machine, expose it with a tunnel:
 
 ```bash
-pm2 start ecosystem.config.js
+npx localtunnel --port 3000
+# use the https URL it prints as your Meta webhook Callback URL
 ```
 
-## Session isolation
+---
 
-Every per-user setting (prefix, AI on/off, auto-react, auto-read, Anti-Delete, Anti-Link,
-Anti-Call, Anti-Status, status auto-download, Islamic scheduler, and the new Auto-Reply) is keyed
-by `userId` in `data/bot_data.json` or an in-memory store keyed by `userId`. One WhatsApp session
-on this bot cannot see or change another session's settings, message logs, or Anti-Delete
-recoveries.
+## ⬆️ Push to GitHub
 
-## Known limitations
+```bash
+cd imran-salara-bot
+git init
+git add .
+git commit -m "IMRAN MD BOT v1.0.0"
+git branch -M main
+git remote add origin https://github.com/YOUR-USERNAME/imran-md-bot.git
+git push -u origin main
+```
 
-- `data/bot_data.json`, `auth_info/`, and `tmp/` are plain local files - fine for Termux/VPS use,
-  but wiped on every Heroku dyno restart (see the Heroku section above). Add a MongoDB/Supabase/
-  Postgres adapter if you need settings and sessions to survive Heroku dyno cycles.
-- Anti-Delete's message buffer is in-memory per session (not written to disk), so a server
-  restart clears any not-yet-deleted messages it was holding. This is intentional - it avoids
-  persisting other people's raw message content to disk.
-- `multer`, `node-webpmux`, `qrcode-terminal`, and `sharp` are listed in `package.json` but are not
-  currently used anywhere in the code. They're harmless to keep, but can be removed to shrink the
-  install size if you don't plan to use them.
+> ⚠️ Never commit your real `.env` file. `.env.example` is the safe template.
 
-## Troubleshooting
+---
 
-- **Bot won't start / "Cannot find module"** → run `npm install` again; make sure you're on Node 20+.
-- **Pairing code doesn't work** → codes expire quickly; request a new one and enter it promptly.
-- **Session keeps logging out** → this usually means WhatsApp force-logged the linked device (e.g.
-  from the phone app); just re-pair.
-- **A downloader command (`.tiktok`, `.facebook`, `.song`, etc.) fails** → the underlying third-party
-  API may be temporarily down; the bot will reply with an error instead of crashing. Try again later.
+## 🚀 Deploy to Heroku
+
+```bash
+heroku create imran-md-bot
+heroku config:set VERIFY_TOKEN=your-verify-token
+heroku config:set WHATSAPP_TOKEN=your-whatsapp-token
+heroku config:set PHONE_NUMBER_ID=your-phone-number-id
+heroku config:set OWNER_NAME="Imran Salara"
+heroku config:set AI_API_URL=https://api.openai.com/v1
+heroku config:set AI_API_KEY=your-ai-key
+heroku config:set AI_MODEL=gpt-4o-mini
+heroku config:set OMDB_API_KEY=your-omdb-key
+heroku config:set WEATHER_API_KEY=your-weather-key
+heroku config:set APP_URL=https://imran-md-bot.herokuapp.com
+
+git push heroku main
+heroku logs --tail
+```
+
+Then set your Meta webhook **Callback URL** to:
+
+```
+https://imran-md-bot.herokuapp.com/webhook
+```
+
+---
+
+## 📱 Dusre Users Ke Liye — Roman Urdu Guide (Apne Number Par Lagana)
+
+> **Note:** Ye bot official WhatsApp Cloud API par chalta hai, is liye har
+> user ko apna **khud ka Meta Developer setup** karna hoga. Koi "link do,
+> number connect karo" wala shortcut nahi hai — unofficial tareeqe se number
+> **ban** ho sakta hai. Neeche wala tareeqa 100% safe hai.
+
+**Step 1 — Meta Developer account**
+1. [developers.facebook.com](https://developers.facebook.com) par jayein, login karein.
+2. **Create App** → **Other** → **Business** → app ka naam likhein.
+3. Dashboard mein **WhatsApp** product **Add** karein.
+
+**Step 2 — Test number ya apna number**
+- **API Setup** page par Meta ka free test number milta hai (foran shuru karne ke liye), ya apna WhatsApp Business number add karein.
+- Wahan se **Temporary Access Token** copy karein aur **Phone Number ID** note karein.
+
+**Step 3 — Code Heroku par lagayein**
+1. Is project ko apne GitHub par fork/clone karein.
+2. Heroku mein nayi app banayein.
+3. **Settings → Config Vars** mein ye values dalein:
+   - `VERIFY_TOKEN` — khud koi secret likhein (yaad rakhein)
+   - `WHATSAPP_TOKEN` — Step 2 wala token
+   - `PHONE_NUMBER_ID` — Step 2 wali ID
+   - `OWNER_NAME` — apna naam
+   - `APP_URL` — `https://aapki-app-ka-naam.herokuapp.com`
+   - `AI_API_URL`, `AI_API_KEY`, `AI_MODEL` — AI auto-reply chahiye to (optional)
+4. **Deploy** dabayein, app ONLINE ho jayegi.
+
+**Step 4 — Webhook lagayein**
+1. Meta App Dashboard → **WhatsApp → Configuration**.
+2. **Callback URL** mein likhein: `https://aapki-app-ka-naam.herokuapp.com/webhook`
+3. **Verify Token** mein wohi `VERIFY_TOKEN` jo Step 3 mein lagaya tha.
+4. **Verify and save** dabayein → phir **messages** field ko **Subscribe** karein.
+
+**Step 5 — Test**
+Apne WhatsApp se bot wale number par `.menu` bhejein — aap ki photo wali
+menu image + 669 commands ki list aa jayegi. Koi aam message bhejein —
+bot usi language (Urdu / Roman Urdu / English / Arabic) mein jawab dega.
+
+---
+
+## 📜 All 669 Commands (150 core + 519 ported)
+
+### ⚙️ General (22 — includes new `.channel`)
+
+| Command | Description | Usage |
+|---|---|---|
+| .ping | Check if the bot is alive | `.ping` |
+| .menu | Show the full command menu | `.menu` |
+| .list | Compact list of all commands | `.list` |
+| .help | Get help for a command | `.help <command>` |
+| .info | About this bot | `.info` |
+| .owner | Contact the bot owner | `.owner` |
+| .bot | Bot identity card | `.bot` |
+| .alive | Is the bot running? | `.alive` |
+| .runtime | Show bot runtime | `.runtime` |
+| .uptime | Show bot uptime | `.uptime` |
+| .speed | Test response speed | `.speed` |
+| .version | Show bot version | `.version` |
+| .stats | Bot statistics | `.stats` |
+| .id | Show your WhatsApp ID | `.id` |
+| .me | Who are you to the bot? | `.me` |
+| .link | Get useful links | `.link` |
+| .rules | Bot usage rules | `.rules` |
+| .donate | Support the bot | `.donate` |
+| .support | Get support info | `.support` |
+| .prefix | Show the command prefix | `.prefix` |
+
+### 🎉 Fun (30)
+
+| Command | Description | Usage |
+|---|---|---|
+| .joke | Get a random joke | `.joke` |
+| .quote | Get an inspirational quote | `.quote` |
+| .fact | Get a random amazing fact | `.fact` |
+| .shayari | Get Urdu/Roman Urdu shayari | `.shayari` |
+| .meme | Get a text meme | `.meme` |
+| .dare | Get a fun dare | `.dare` |
+| .truth | Get a truth question | `.truth` |
+| .8ball | Ask the magic 8-ball | `.8ball <question>` |
+| .dice | Roll a dice | `.dice` |
+| .coin | Flip a coin | `.coin` |
+| .rps | Rock paper scissors | `.rps <rock|paper|scissors>` |
+| .riddle | Get a riddle | `.riddle` |
+| .compliment | Get a compliment | `.compliment` |
+| .roast | Playful friendly roast | `.roast` |
+| .love | Love compatibility meter | `.love <name1> <name2>` |
+| .luck | Check your luck today | `.luck` |
+| .horoscope | Daily horoscope (for fun) | `.horoscope <sign>` |
+| .slot | Slot machine game | `.slot` |
+| .roll | Roll a number (1-N) | `.roll <max>` |
+| .choose | Let the bot choose for you | `.choose <opt1> | <opt2> | ...` |
+| .reverse | Reverse your text | `.reverse <text>` |
+| .emojify | Convert text to emoji letters | `.emojify <text>` |
+| .owo | OwO-ify your text | `.owo <text>` |
+| .clap | Add claps between words | `.clap <text>` |
+| .mock | sPoNgEbOb mock text | `.mock <text>` |
+| .tinytext | Make text tiny | `.tinytext <text>` |
+| .asciiword | ASCII art word/animal | `.asciiword <cat|dog|heart>` |
+| .pickup | Get a pickup line | `.pickup` |
+| .tongue | Tongue twister challenge | `.tongue` |
+| .riddle2 | Another riddle | `.riddle2` |
+
+### 🛠️ Tools (30)
+
+| Command | Description | Usage |
+|---|---|---|
+| .calc | Calculate a math expression | `.calc 12*8+5` |
+| .qr | Generate a QR code image | `.qr <text>` |
+| .translate | Translate text (free API) | `.translate <lang> <text>  (e.g. .translate ur hello)` |
+| .wiki | Wikipedia summary | `.wiki <topic>` |
+| .define | English word definition | `.define <word>` |
+| .weather | Current weather for a city | `.weather <city>` |
+| .time | Current time | `.time [timezone]` |
+| .date | Today's date | `.date` |
+| .currency | Convert currency (free rates) | `.currency <amount> <from> <to>  (e.g. .currency 100 USD PKR)` |
+| .password | Generate a strong password | `.password [length]` |
+| .uuid | Generate a UUID | `.uuid` |
+| .base64enc | Encode text to Base64 | `.base64enc <text>` |
+| .base64dec | Decode Base64 text | `.base64dec <base64>` |
+| .urlencode | URL-encode text | `.urlencode <text>` |
+| .urldecode | URL-decode text | `.urldecode <text>` |
+| .morse | Text ⇄ Morse code | `.morse <text>  or  .morse decode <code>` |
+| .binary | Convert text to binary | `.binary <text>` |
+| .hex | Convert text to hex | `.hex <text>` |
+| .charcount | Count characters | `.charcount <text>` |
+| .wordcount | Count words | `.wordcount <text>` |
+| .color | Random color with hex code | `.color` |
+| .ipinfo | Look up an IP address (free API) | `.ipinfo <ip>` |
+| .timer | Set a quick timer (max 60 min) | `.timer <minutes> [label]` |
+| .reminder | Remind yourself later (max 24h) | `.reminder <minutes> <message>` |
+| .note | Save / list / clear notes | `.note add <text> | .note list | .note clear` |
+| .todo | To-do list manager | `.todo add <task> | .todo list | .todo done <n> | .todo clear` |
+| .poll | Create a simple poll | `.poll <question> | <opt1> | <opt2> ...` |
+| .langdetect | Detect Urdu / Roman Urdu / English | `.langdetect <text>` |
+| .hash | SHA-256 / MD5 hash of text | `.hash [md5] <text>` |
+| .caseconv | Change text case | `.caseconv <upper|lower|title> <text>` |
+
+### ⬇️ Downloaders (20)
+
+| Command | Description | Usage |
+|---|---|---|
+| .tiktok | TikTok video info (legal links) | `.tiktok <search words>` |
+| .ytmp3info | How to get YouTube audio legally | `.ytmp3info <song name>` |
+| .ytmp4info | How to watch YouTube videos legally | `.ytmp4info <video name>` |
+| .youtube | YouTube search link | `.youtube <search>` |
+| .insta | Instagram post info (legal links) | `.insta <search words>` |
+| .fbdl | Facebook video info (legal links) | `.fbdl <search words>` |
+| .twitterdl | X/Twitter media info (legal links) | `.twitterdl <search words>` |
+| .pinterest | Pinterest search link | `.pinterest <search>` |
+| .song | Find a song on legal platforms | `.song <song name>` |
+| .lyrics | Find lyrics on legal sites | `.lyrics <song name>` |
+| .wallpaper | Free wallpaper image | `.wallpaper` |
+| .ringtone | Ringtone info (legal sources) | `.ringtone <search>` |
+| .stickerinfo | How WhatsApp stickers work | `.stickerinfo` |
+| .apk | APK safety info | `.apk <app name>` |
+| .spotifyinfo | Spotify search link | `.spotifyinfo <search>` |
+| .soundcloud | SoundCloud search link | `.soundcloud <search>` |
+| .dailymotion | Dailymotion search link | `.dailymotion <search>` |
+| .vimeo | Vimeo search link | `.vimeo <search>` |
+| .rumble | Rumble search link | `.rumble <search>` |
+| .mediafire | MediaFire safety info | `.mediafire <search>` |
+
+### 🎬 Movies (15)
+
+| Command | Description | Usage |
+|---|---|---|
+| .movie | Movie details (OMDB) | `.movie <title>` |
+| .series | TV series details (OMDB) | `.series <title>` |
+| .anime | Anime details (OMDB) | `.anime <title>` |
+| .actor | Actor filmography search (OMDB) | `.actor <name>` |
+| .trending | Trending movies (sample list) | `.trending` |
+| .topmovies | Top rated movies of all time | `.topmovies` |
+| .upcoming | Upcoming releases info | `.upcoming` |
+| .moviequote | Famous movie quote | `.moviequote` |
+| .recommend | Get a movie recommendation | `.recommend <action|comedy|drama|horror|scifi|romance|animated>` |
+| .watchlistadd | Add movie to your watchlist | `.watchlistadd <title>` |
+| .watchlist | Show your watchlist | `.watchlist` |
+| .watchlistremove | Remove from watchlist | `.watchlistremove <number>` |
+| .genre | Browse movies by genre | `.genre <genre>` |
+| .boxoffice | All-time box office (sample) | `.boxoffice` |
+| .comingsoon | Coming soon info | `.comingsoon` |
+
+### 🕌 Islamic (15)
+
+| Command | Description | Usage |
+|---|---|---|
+| .quran | Read a Quran verse (free API) | `.quran <surah:ayah>  (e.g. .quran 2:255)` |
+| .hadith | Get a hadith | `.hadith` |
+| .prayer | Prayer timings for a city | `.prayer <city>  (e.g. .prayer Karachi)` |
+| .qibla | Qibla direction info | `.qibla` |
+| .dua | Daily duas with meaning | `.dua [number]` |
+| .names99 | Allah's 99 names (paginated) | `.names99 [page 1-5]` |
+| .hijri | Today's Hijri date | `.hijri` |
+| .tasbih | Digital tasbih counter | `.tasbih [add|reset]` |
+| .zakat | Zakat calculator (2.5%) | `.zakat <amount>` |
+| .seerat | Seerah facts | `.seerat` |
+| .wazifa | Daily wazaif guidance | `.wazifa` |
+| .ramadan | Ramadan info | `.ramadan` |
+| .hajjinfo | Hajj information | `.hajjinfo` |
+| .masjidinfo | Find mosques near you | `.masjidinfo <city>` |
+| .darood | Darood Shareef text | `.darood` |
+
+### 🤖 AI & Fun (20)
+
+| Command | Description | Usage |
+|---|---|---|
+| .ai | Chat with the AI | `.ai <your message>` |
+| .ask | Ask the AI anything | `.ask <question>` |
+| .imagine | Describe an image idea in words (no generation) | `.imagine <idea>` |
+| .summarize | Summarize long text | `.summarize <text>` |
+| .rewrite | Rewrite text better | `.rewrite <text>` |
+| .grammar | Fix grammar | `.grammar <text>` |
+| .story | Get a short story | `.story [topic]` |
+| .poem | Get a short poem | `.poem [topic]` |
+| .essay | Short essay on a topic | `.essay <topic>` |
+| .explain | Explain like I’m five | `.explain <topic>` |
+| .codehelp | Explain or write code | `.codehelp <question>` |
+| .caption | Photo caption ideas | `.caption <topic>` |
+| .bio | Profile bio ideas | `.bio <your interest>` |
+| .slogan | Slogan generator | `.slogan <brand/topic>` |
+| .emaildraft | Draft an email | `.emaildraft <purpose>` |
+| .speech | Short speech draft | `.speech <topic>` |
+| .debate | Debate points for/against | `.debate <topic>` |
+| .recipe | Simple recipe | `.recipe <dish>` |
+| .workout | Quick workout plan | `.workout [goal]` |
+| .studyplan | Study plan helper | `.studyplan <subject/exam>` |
+
+---
+
+## ⚖️ Legal & Safety Notes
+
+- **Official API only.** IMRAN MD BOT uses the Meta WhatsApp Cloud API.
+  Unofficial "MD" bots that log into personal WhatsApp accounts violate
+  WhatsApp's Terms of Service and risk permanent number bans — this project
+  deliberately avoids that route.
+- **No piracy.** Downloader commands (`.tiktok`, `.ytmp3info`, `.song`, …)
+  provide official links and legal alternatives only. Movie commands never
+  link to pirated streams; they point to Netflix, Prime Video, cinemas, etc.
+- **Best-effort AI.** AI replies are generated text, not professional advice.
+- **In-memory extras.** Watchlist, notes, to-dos and the tasbih counter live
+  in server memory and reset on restart — plug in a database for persistence.
+
+---
+
+## 📁 Project Structure
+
+```
+imran-salara-bot/
+├── Procfile                  # Heroku: web: node src/index.js
+├── package.json
+├── .env.example
+├── README.md
+└── src/
+    ├── index.js               # Express server + webhook
+    ├── services/
+    │   ├── whatsapp.js        # sendText / sendImage / markRead (Graph API v21.0)
+    │   └── ai.js              # OpenAI-compatible AI client
+    ├── commands/
+    │   ├── index.js           # 669-command registry + findCommand() + aliases
+    │   ├── general.js         # 20 commands
+    │   ├── fun.js             # 30 commands
+    │   ├── tools.js           # 30 commands
+    │   ├── downloaders.js     # 20 commands (legal links only)
+    │   ├── movies.js          # 15 commands
+    │   ├── islamic.js         # 15 commands
+    │   └── aifun.js           # 20 commands
+    └── handlers/
+        └── messageHandler.js  # command routing + AI fallback
+```
+
+---
+
+Made with ❤️ by **IMRAN MD BOT** — official WhatsApp Cloud API edition.
