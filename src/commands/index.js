@@ -1,88 +1,50 @@
 // ============================================================
-// IMRAN MD BOT — Express server (official WhatsApp Cloud API)
-// Webhook verification + incoming message handling.
+// IMRAN MD BOT — command registry (150 core + 519 ported = 669)
+// Aggregates every category file into one lookup table.
 // ============================================================
 
-require('dotenv').config();
-const express = require('express');
-const path = require('path');
-const { sendText, sendImage, markRead } = require('./services/whatsapp');
-const { handleIncomingText, BOT_NAME } = require('./handlers/messageHandler');
+const general = require('./general');
+const fun = require('./fun');
+const tools = require('./tools');
+const downloaders = require('./downloaders');
+const movies = require('./movies');
+const islamic = require('./islamic');
+const aifun = require('./aifun');
+const ported = require('./ported');
 
-const app = express();
-app.use(express.json());
+const allCommands = [
+  ...general,
+  ...fun,
+  ...tools,
+  ...downloaders,
+  ...movies,
+  ...islamic,
+  ...aifun,
+  ...ported,
+];
 
-// Serve public/menu.jpg (the bot's menu image) so WhatsApp can fetch it.
-app.use(express.static(path.join(__dirname, '..', 'public')));
+// Guard against accidental duplicates at load time.
+const seen = new Set();
+for (const cmd of allCommands) {
+  if (seen.has(cmd.name)) throw new Error(`Duplicate command name: ${cmd.name}`);
+  seen.add(cmd.name);
+}
 
-const VERIFY_TOKEN = process.env.VERIFY_TOKEN || '';
-const PORT = process.env.PORT || 3000;
-
-// ---------- Health check ----------
-app.get('/', (req, res) => {
-  res.json({
-    bot: BOT_NAME,
-    status: 'online',
-    version: '1.0.0',
-    uptime_seconds: Math.floor(process.uptime()),
-  });
-});
-
-// ---------- Webhook verification (Meta calls this once at setup) ----------
-app.get('/webhook', (req, res) => {
-  const mode = req.query['hub.mode'];
-  const token = req.query['hub.verify_token'];
-  const challenge = req.query['hub.challenge'];
-
-  if (mode === 'subscribe' && token === VERIFY_TOKEN && VERIFY_TOKEN) {
-    console.log('✅ Webhook verified by Meta.');
-    return res.status(200).send(challenge);
+// Alias lookup (ported commands may carry aliases).
+const aliasMap = new Map();
+for (const cmd of allCommands) {
+  for (const a of (cmd.aliases || [])) {
+    const key = String(a).toLowerCase();
+    if (seen.has(key)) throw new Error(`Duplicate alias (collides with command name): ${a}`);
+    if (aliasMap.has(key)) throw new Error(`Duplicate alias: ${a}`);
+    aliasMap.set(key, cmd);
   }
-  console.warn('⚠️ Webhook verification failed.');
-  return res.sendStatus(403);
-});
+}
 
-// ---------- Incoming messages ----------
-app.post('/webhook', async (req, res) => {
-  // Acknowledge immediately so Meta doesn't retry.
-  res.sendStatus(200);
+// Case-insensitive lookup; strips a leading dot if present.
+function findCommand(name) {
+  const key = String(name || '').toLowerCase().replace(/^\./, '');
+  return allCommands.find((c) => c.name === key) || aliasMap.get(key) || null;
+}
 
-  try {
-    const entry = req.body?.entry?.[0];
-    const change = entry?.changes?.[0];
-    const value = change?.value;
-    const message = value?.messages?.[0];
-    if (!message) return; // e.g. status updates — nothing to do.
-
-    const from = message.from; // sender's WhatsApp ID
-    const msgId = message.id;
-    const text = message.text?.body || '';
-
-    // Blue ticks.
-    try { await markRead(msgId); } catch (e) { console.warn('markRead failed:', e.message); }
-
-    if (!text) {
-      await sendText(from, `🤖 *${BOT_NAME}*\n\nI can only read text messages right now. Try .menu for my 669 commands!`);
-      return;
-    }
-
-    console.log(`📩 from ${from}: ${text.slice(0, 80)}`);
-
-    const reply = await handleIncomingText(from, text, (t) => sendText(from, t));
-    if (!reply) return;
-
-    if (typeof reply === 'string') {
-      await sendText(from, reply);
-    } else if (reply.image) {
-      await sendImage(from, reply.image, reply.text || '');
-    } else if (reply.text) {
-      await sendText(from, reply.text);
-    }
-  } catch (err) {
-    console.error('Webhook handling error:', err.message);
-  }
-});
-
-app.listen(PORT, () => {
-  console.log(`🤖 ${BOT_NAME} listening on port ${PORT}`);
-});
+module.exports = { allCommands, findCommand };
